@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuroWeave – Autonomous Education Coach</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════ */
+:root {
+  --bg:      #04070f;
+  --bg1:     #080d18;
+  --bg2:     #0c1220;
+  --bg3:     #111827;
+  --line:    rgba(148,163,184,.08);
+  --line2:   rgba(148,163,184,.15);
+  --cyan:    #22d3ee;
+  --indigo:  #818cf8;
+  --emerald: #34d399;
+  --amber:   #fbbf24;
+  --rose:    #fb7185;
+  --violet:  #c084fc;
+  --text:    #f1f5f9;
+  --muted:   #64748b;
+  --muted2:  #94a3b8;
+  --mono:    'JetBrains Mono', monospace;
+  --sans:    'Outfit', sans-serif;
+  --r:       10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);overflow-x:hidden}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 800px 500px at 0% 0%,  rgba(34,211,238,.05),transparent 60%),
+    radial-gradient(ellipse 600px 400px at 100% 100%,rgba(129,140,248,.05),transparent 60%);
+}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:10px}
+
+/* ═══ SIDEBAR ═══ */
+.sidebar{
+  position:fixed;top:0;left:0;width:235px;height:100vh;
+  background:var(--bg1);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;z-index:200;
+}
+.sb-top{padding:20px 18px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.brand-hex{
+  width:34px;height:34px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--cyan),var(--indigo));
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  display:flex;align-items:center;justify-content:center;font-size:15px;
+}
+.brand-name{
+  font-size:17px;font-weight:800;
+  background:linear-gradient(135deg,var(--cyan),var(--indigo));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.brand-sub{font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
+.learner-chip{
+  display:flex;align-items:center;gap:9px;
+  background:var(--bg2);border:1px solid var(--line);
+  border-radius:var(--r);padding:9px 11px;
+}
+.av{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--cyan),var(--indigo));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:11px;color:var(--bg);
+}
+.av-name{font-size:13px;font-weight:600}
+.av-lvl{font-size:10px;color:var(--cyan);font-family:var(--mono);margin-top:1px}
+
+/* nav */
+.nav{flex:1;padding:10px 8px;overflow-y:auto}
+.nav-sec{font-size:9px;font-family:var(--mono);color:var(--muted);
+  letter-spacing:1.5px;text-transform:uppercase;padding:10px 8px 5px}
+.nav-item{
+  display:flex;align-items:center;gap:9px;
+  padding:9px 10px;border-radius:8px;font-size:13px;font-weight:500;
+  color:var(--muted2);cursor:pointer;transition:all .15s;
+  border:1px solid transparent;margin-bottom:2px;position:relative;
+  user-select:none;
+}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.03)}
+.nav-item.active{
+  color:var(--text);background:rgba(34,211,238,.07);
+  border-color:rgba(34,211,238,.14);
+}
+.nav-item.active::before{
+  content:'';position:absolute;left:0;top:20%;bottom:20%;
+  width:2px;background:var(--cyan);border-radius:10px;
+}
+.nav-ic{font-size:14px;width:18px;text-align:center}
+.nav-badge{
+  margin-left:auto;background:var(--rose);color:#fff;
+  font-size:9px;font-family:var(--mono);padding:1px 5px;
+  border-radius:20px;font-weight:700;
+}
+.nav-dot{
+  margin-left:auto;width:6px;height:6px;
+  border-radius:50%;background:var(--emerald);
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(52,211,153,.4)}50%{box-shadow:0 0 0 4px rgba(52,211,153,0)}}
+
+.sb-foot{padding:12px 18px;border-top:1px solid var(--line);
+  display:flex;align-items:center;gap:8px}
+.sb-dot{width:6px;height:6px;border-radius:50%;background:var(--emerald);animation:pulse 2s infinite}
+.sb-lbl{font-size:10px;font-family:var(--mono);color:var(--muted)}
+
+/* ═══ MAIN ═══ */
+.main{margin-left:235px;padding:26px 30px;position:relative;z-index:1;min-height:100vh}
+
+/* ═══ PAGES ═══ */
+.page{display:none}
+.page.active{display:block;animation:fadeUp .3s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══ TOPBAR ═══ */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.page-title{font-size:20px;font-weight:800;letter-spacing:-.3px}
+.page-title span{color:var(--cyan)}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--bg2);border:1px solid var(--line2);
+  border-radius:20px;padding:5px 13px;
+  font-size:10px;font-family:var(--mono);
+}
+.chip-dot{width:6px;height:6px;border-radius:50%}
+
+/* ═══ CARDS ═══ */
+.card{background:var(--bg1);border:1px solid var(--line);border-radius:12px;padding:16px;position:relative;overflow:hidden}
+.card-lbl{font-size:9px;font-family:var(--mono);letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.card-val{font-size:26px;font-weight:800;line-height:1}
+.card-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.delta{
+  display:inline-flex;align-items:center;gap:3px;margin-top:6px;
+  font-size:10px;font-family:var(--mono);padding:2px 7px;
+  border-radius:4px;font-weight:600;
+}
+.dg{background:rgba(52,211,153,.1);color:var(--emerald)}
+.dr{background:rgba(251,113,133,.1);color:var(--rose)}
+.dy{background:rgba(251,191,36,.1);color:var(--amber)}
+
+/* ═══ GRIDS ═══ */
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:16px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:16px}
+.g21{display:grid;grid-template-columns:2fr 1fr;gap:13px;margin-bottom:16px}
+.mb{margin-bottom:16px}
+
+/* ═══ PROGRESS BARS ═══ */
+.pr{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.pr-lbl{font-size:11px;width:145px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pr-track{flex:1;height:5px;background:rgba(255,255,255,.05);border-radius:10px;overflow:hidden}
+.pr-fill{height:100%;border-radius:10px;transition:width 1.2s cubic-bezier(.23,1,.32,1)}
+.pr-pct{font-size:10px;font-family:var(--mono);width:32px;text-align:right}
+
+/* ═══ WELCOME BANNER ═══ */
+.welcome{
+  background:linear-gradient(135deg,rgba(34,211,238,.06),rgba(129,140,248,.06));
+  border:1px solid var(--line);border-radius:14px;
+  padding:18px 22px;margin-bottom:18px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.w-title{font-size:14px;font-weight:700;margin-bottom:3px}
+.w-sub{font-size:12px;color:var(--muted2);line-height:1.5}
+.streak-num{font-size:28px;font-weight:800;color:var(--amber);line-height:1}
+.streak-lbl{font-size:9px;font-family:var(--mono);color:var(--muted);text-align:center}
+
+/* ═══ ALERTS ═══ */
+.alert{
+  background:var(--bg2);border-radius:var(--r);
+  padding:11px 13px;display:flex;align-items:flex-start;
+  gap:9px;border:1px solid;margin-bottom:8px;
+}
+.alert-gap{border-color:rgba(251,113,133,.2)}
+.alert-warn{border-color:rgba(251,191,36,.2)}
+.alert-ok{border-color:rgba(52,211,153,.2)}
+.a-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.a-title{font-size:12px;font-weight:700;margin-bottom:2px}
+.a-desc{font-size:11px;color:var(--muted2);line-height:1.4}
+
+/* ═══ RETENTION CHART ═══ */
+.ret-chart{display:flex;align-items:flex-end;gap:5px;height:68px;margin-top:10px}
+.ret-bar{
+  flex:1;border-radius:3px 3px 0 0;min-height:4px;
+  transition:height .6s ease;cursor:pointer;position:relative;
+}
+.ret-bar:hover::after{
+  content:attr(data-v);position:absolute;bottom:105%;left:50%;
+  transform:translateX(-50%);font-size:9px;font-family:var(--mono);
+  color:var(--text);background:var(--bg2);padding:1px 4px;border-radius:3px;white-space:nowrap;
+}
+.ret-lbls{display:flex;gap:5px;margin-top:4px}
+.ret-lbl{flex:1;text-align:center;font-size:8px;font-family:var(--mono);color:var(--muted)}
+
+/* ═══ QUIZ ═══ */
+.quiz-layout{display:grid;grid-template-columns:1fr 265px;gap:16px}
+.q-meta{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap}
+.q-tag{padding:3px 9px;border-radius:20px;font-size:10px;font-family:var(--mono);font-weight:700}
+.qt-t{background:rgba(34,211,238,.1);color:var(--cyan)}
+.qt-d{background:rgba(251,191,36,.1);color:var(--amber)}
+.qt-n{background:rgba(129,140,248,.1);color:var(--indigo)}
+.q-prog-wrap{height:3px;background:rgba(255,255,255,.05);border-radius:10px;margin-bottom:20px;overflow:hidden}
+.q-prog-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--indigo));border-radius:10px;transition:width .5s ease}
+.q-num{font-size:10px;font-family:var(--mono);color:var(--muted);margin-bottom:6px}
+.q-text{font-size:17px;font-weight:700;line-height:1.5;margin-bottom:18px}
+.opts{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.opt{
+  padding:11px 14px;border:1px solid var(--line2);border-radius:var(--r);
+  cursor:pointer;font-size:13px;transition:all .2s;
+  display:flex;align-items:center;gap:11px;
+}
+.opt:hover:not(.locked){border-color:var(--cyan);background:rgba(34,211,238,.04)}
+.opt.sel{border-color:var(--cyan);background:rgba(34,211,238,.06)}
+.opt.ok{border-color:var(--emerald);background:rgba(52,211,153,.06)}
+.opt.bad{border-color:var(--rose);background:rgba(251,113,133,.06)}
+.opt.locked{pointer-events:none}
+.opt-key{
+  width:23px;height:23px;border:1px solid var(--line2);
+  border-radius:5px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:10px;flex-shrink:0;
+}
+.q-fb{
+  background:var(--bg2);border-radius:var(--r);padding:12px;
+  font-size:12px;border-left:3px solid;display:none;line-height:1.5;margin-bottom:14px;
+}
+.q-fb.show{display:block;animation:fadeUp .3s ease}
+.fb-ok{border-color:var(--emerald)}
+.fb-bad{border-color:var(--rose)}
+.think{display:none;align-items:center;gap:7px;font-size:10px;
+  color:var(--muted);font-family:var(--mono);padding:7px 0;margin-bottom:9px}
+.think.show{display:flex}
+.dots span{animation:blink 1.2s infinite;margin:0 1px}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,100%{opacity:.2}50%{opacity:1}}
+.btn{padding:10px 22px;border-radius:8px;border:none;cursor:pointer;
+  font-family:var(--sans);font-size:13px;font-weight:600;transition:all .2s}
+.btn-primary{background:var(--cyan);color:var(--bg)}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.btn-ghost{background:transparent;border:1px solid var(--line2);color:var(--muted2)}
+.btn-ghost:hover{color:var(--text)}
+.sess-card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:13px;margin-bottom:11px}
+.sess-val{font-size:22px;font-weight:800;margin-top:4px}
+.score-screen{text-align:center;padding:40px 20px}
+.score-big{
+  font-size:68px;font-weight:900;line-height:1;margin-bottom:8px;
+  background:linear-gradient(135deg,var(--cyan),var(--indigo));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+
+/* ═══ CONCEPT NODES ═══ */
+.concept-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+.cn{
+  background:var(--bg2);border:1px solid var(--line);
+  border-radius:var(--r);padding:13px;cursor:pointer;transition:all .2s;position:relative;
+}
+.cn:hover{transform:translateY(-2px);border-color:var(--line2)}
+.cn.mastered{border-color:rgba(52,211,153,.2)}
+.cn.learning{border-color:rgba(251,191,36,.2)}
+.cn.gap{border-color:rgba(251,113,133,.2)}
+.cn-name{font-size:13px;font-weight:700;margin-bottom:4px}
+.cn-val{font-size:11px;font-family:var(--mono)}
+.cn-bar{height:3px;border-radius:10px;margin-top:7px}
+.cn-flag{
+  position:absolute;top:9px;right:9px;
+  font-size:9px;padding:2px 6px;border-radius:4px;
+  font-family:var(--mono);font-weight:700;
+}
+.fm{background:rgba(52,211,153,.1);color:var(--emerald)}
+.fl{background:rgba(251,191,36,.1);color:var(--amber)}
+.fg{background:rgba(251,113,133,.1);color:var(--rose)}
+
+/* ═══ AGENT CARDS ═══ */
+.agent-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:16px}
+.ac{
+  background:var(--bg2);border:1px solid var(--line);
+  border-radius:var(--r);padding:13px;position:relative;overflow:hidden;
+}
+.ac::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.ac-head::after{background:linear-gradient(90deg,var(--cyan),var(--indigo))}
+.ac-lm::after{background:var(--indigo)}
+.ac-adapt::after{background:var(--emerald)}
+.ac-fair::after{background:var(--amber)}
+.ac-cont::after{background:var(--violet)}
+.ac-icon{font-size:20px;margin-bottom:7px}
+.ac-name{font-size:12px;font-weight:700;margin-bottom:2px}
+.ac-role{font-size:10px;color:var(--muted);line-height:1.4;margin-bottom:7px}
+.ac-state{font-size:9px;font-family:var(--mono);font-weight:700;padding:2px 6px;border-radius:4px;display:inline-block}
+.st-a{background:rgba(34,211,238,.1);color:var(--cyan)}
+.st-n{background:rgba(129,140,248,.1);color:var(--indigo)}
+.st-s{background:rgba(52,211,153,.1);color:var(--emerald)}
+.st-m{background:rgba(251,191,36,.1);color:var(--amber)}
+.st-r{background:rgba(192,132,252,.1);color:var(--violet)}
+.ac-pulse{position:absolute;top:12px;right:12px;width:6px;height:6px;
+  border-radius:50%;background:var(--emerald);animation:pulse 2s infinite}
+
+/* ═══ LOG FEED ═══ */
+.log-feed{height:230px;overflow-y:auto;font-family:var(--mono);font-size:10.5px;line-height:1.9}
+.log-row{display:flex;gap:8px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.02)}
+.lt{color:var(--muted);flex-shrink:0}
+.la{flex-shrink:0;font-weight:700}
+.la-h{color:var(--cyan)}
+.la-l{color:var(--indigo)}
+.la-a{color:var(--emerald)}
+.la-f{color:var(--amber)}
+.la-c{color:var(--violet)}
+.lm-txt{color:var(--muted2)}
+
+/* ═══ DECISIONS ═══ */
+.de{background:var(--bg2);border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid}
+.de-hd{display:flex;justify-content:space-between;margin-bottom:3px}
+.de-ag{font-family:var(--mono);font-size:9px;font-weight:700}
+.de-tm{font-size:9px;font-family:var(--mono);color:var(--muted)}
+.de-dec{font-size:12px;font-weight:700;margin-bottom:3px}
+.de-rea{font-size:11px;color:var(--muted2);line-height:1.4}
+.de-cf{margin-top:6px;display:flex;align-items:center;gap:7px}
+.de-cfl{font-size:9px;font-family:var(--mono);color:var(--muted)}
+.de-cfb{height:3px;border-radius:10px;display:inline-block;vertical-align:middle}
+
+/* ═══ TASK QUEUE ═══ */
+.tq{background:var(--bg2);border-radius:8px;padding:9px 12px;margin-bottom:8px;border-left:2px solid;font-size:12px}
+.tq-hd{display:flex;justify-content:space-between;margin-bottom:2px}
+.tq-sub{font-size:10px;color:var(--muted)}
+
+/* ═══ SELECT ═══ */
+.sel-inp{
+  background:var(--bg2);border:1px solid var(--line2);
+  color:var(--text);padding:7px 11px;border-radius:8px;
+  font-family:var(--sans);font-size:13px;cursor:pointer;
+}
+.sel-inp:focus{outline:none;border-color:var(--cyan)}
+
+/* ═══ RADAR ═══ */
+svg.radar{overflow:visible}
+
+/* ═══ LOADING ═══ */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px 20px;gap:12px}
+.spinner{width:32px;height:32px;border:2px solid var(--line2);border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-txt{font-size:10px;font-family:var(--mono);color:var(--muted)}
+
+/* ═══ LLM BADGE ═══ */
+.llm-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.2);
+  border-radius:6px;padding:4px 9px;
+  font-size:10px;font-family:var(--mono);color:var(--cyan);margin-bottom:8px;
+}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:1200px){.g4{grid-template-columns:repeat(2,1fr)}.agent-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){
+  .sidebar{width:56px}.main{margin-left:56px}
+  .sb-top .brand-name,.sb-top .brand-sub,.learner-chip .av-name,
+  .learner-chip .av-lvl,.nav-item span:not(.nav-ic),.sb-lbl{display:none}
+  .nav-item{justify-content:center}
+}
+</style>
+</head>
+<body>
+
+<!-- ████ SIDEBAR ████ -->
+<nav class="sidebar">
+  <div class="sb-top">
+    <div class="brand">
+      <div class="brand-hex">⬡</div>
+      <div>
+        <div class="brand-name">NeuroWeave</div>
+        <div class="brand-sub">Education Coach</div>
+      </div>
+    </div>
+    <div class="learner-chip">
+      <div class="av" id="sid-av">AR</div>
+      <div>
+        <div class="av-name" id="sid-name">Arjun R.</div>
+        <div class="av-lvl" id="sid-lvl">LEVEL 4 · Intermediate</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <div class="nav-sec">Main</div>
+    <div class="nav-item active" onclick="nav('dashboard')">
+      <span class="nav-ic">⬡</span><span>Dashboard</span><div class="nav-dot"></div>
+    </div>
+    <div class="nav-item" onclick="nav('quiz')">
+      <span class="nav-ic">◈</span><span>Adaptive Quiz</span>
+      <span class="nav-badge" id="gap-badge">0</span>
+    </div>
+    <div class="nav-item" onclick="nav('knowledge')">
+      <span class="nav-ic">◉</span><span>Knowledge Map</span>
+    </div>
+    <div class="nav-sec">System</div>
+    <div class="nav-item" onclick="nav('agents')">
+      <span class="nav-ic">◎</span><span>Agent Monitor</span><div class="nav-dot"></div>
+    </div>
+    <div class="nav-item" onclick="nav('decisions')">
+      <span class="nav-ic">⊡</span><span>Decision Logs</span>
+    </div>
+  </div>
+
+  <div class="sb-foot">
+    <div class="sb-dot"></div>
+    <span class="sb-lbl">4 agents · LLM live</span>
+  </div>
+</nav>
+
+<!-- ████ MAIN ████ -->
+<main class="main">
+
+<!-- ══ DASHBOARD ══ -->
+<div class="page active" id="p-dashboard">
+  <div class="topbar">
+    <div class="page-title"><span>Neural</span> Dashboard</div>
+    <div class="chip"><div class="chip-dot" style="background:var(--emerald)"></div>Multi-Agent System Live</div>
+  </div>
+
+  <!-- Welcome banner — shows LLM session brief -->
+  <div class="welcome">
+    <div>
+      <div class="w-title" id="w-title">Good morning! Ready to learn? 👋</div>
+      <div class="llm-badge">🧠 LLM Session Brief</div>
+      <div class="w-sub" id="w-sub" style="max-width:560px">Loading AI recommendation…</div>
+    </div>
+    <div>
+      <div class="streak-num" id="streak-num">🔥 0</div>
+      <div class="streak-lbl">DAY STREAK</div>
+    </div>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="g4">
+    <div class="card">
+      <div class="card-lbl">Overall Mastery</div>
+      <div class="card-val" style="color:var(--cyan)" id="s-mastery">–</div>
+      <div class="card-sub">Across all concepts</div>
+      <div class="delta dg">↑ Tracked live</div>
+    </div>
+    <div class="card">
+      <div class="card-lbl">Knowledge Gaps</div>
+      <div class="card-val" style="color:var(--rose)" id="s-gaps">–</div>
+      <div class="card-sub">Need review</div>
+      <div class="delta dr" id="s-gaps-d">Loading…</div>
+    </div>
+    <div class="card">
+      <div class="card-lbl">Total Sessions</div>
+      <div class="card-val" style="color:var(--emerald)" id="s-sessions">–</div>
+      <div class="card-sub">Completed</div>
+      <div class="delta dg">↑ Active learner</div>
+    </div>
+    <div class="card">
+      <div class="card-lbl">Day Streak</div>
+      <div class="card-val" style="color:var(--amber)" id="s-streak">–</div>
+      <div class="card-sub">Consecutive days</div>
+      <div class="delta dy">🔥 Keep going!</div>
+    </div>
+  </div>
+
+  <!-- Mastery breakdown + retention -->
+  <div class="g21">
+    <div class="card">
+      <div class="card-lbl">Concept Mastery Breakdown</div>
+      <div id="mastery-bars" style="margin-top:8px">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-lbl">Retention Decay · 7 Days</div>
+      <div class="ret-chart" id="ret-chart"></div>
+      <div class="ret-lbls">
+        <div class="ret-lbl">M</div><div class="ret-lbl">T</div><div class="ret-lbl">W</div>
+        <div class="ret-lbl">T</div><div class="ret-lbl">F</div><div class="ret-lbl">S</div>
+        <div class="ret-lbl">S</div>
+      </div>
+      <div style="margin-top:8px;font-size:10px;font-family:var(--mono);color:var(--rose)" id="ret-note"></div>
+    </div>
+  </div>
+
+  <!-- LLM cognitive analysis + interventions -->
+  <div class="g2">
+    <div class="card mb">
+      <div class="card-lbl">Learner Modeling Agent · Cognitive Analysis</div>
+      <div class="llm-badge">🔍 LLM Output</div>
+      <div id="llm-analysis" style="font-size:13px;color:var(--muted2);line-height:1.7">
+        Loading cognitive analysis…
+      </div>
+    </div>
+    <div class="card mb">
+      <div class="card-lbl">Active Interventions</div>
+      <div id="intervention-cards" style="margin-top:8px">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ QUIZ ══ -->
+<div class="page" id="p-quiz">
+  <div class="topbar">
+    <div class="page-title"><span>Adaptive</span> Quiz Engine</div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <select class="sel-inp" id="quiz-concept-sel" onchange="loadQuiz()">
+        <option value="Recursion">Recursion</option>
+        <option value="Sorting Algorithms">Sorting Algorithms</option>
+        <option value="Arrays">Arrays</option>
+        <option value="OOP Concepts">OOP Concepts</option>
+        <option value="Dynamic Programming">Dynamic Programming</option>
+      </select>
+      <div class="chip"><div class="chip-dot" style="background:var(--cyan)"></div>Adaptive Decision Agent</div>
+    </div>
+  </div>
+
+  <div class="quiz-layout">
+    <div id="quiz-area">
+      <div class="loading"><div class="spinner"></div><span class="load-txt">Loading quiz…</span></div>
+    </div>
+    <div>
+      <div class="sess-card">
+        <div class="card-lbl">Session Score</div>
+        <div class="sess-val" style="color:var(--emerald)" id="q-correct">0 / 0</div>
+        <div style="margin-top:8px">
+          <div class="pr">
+            <div class="pr-lbl" style="font-size:11px">Accuracy</div>
+            <div class="pr-track"><div class="pr-fill" id="q-acc-bar" style="width:0%;background:var(--cyan)"></div></div>
+            <div class="pr-pct" id="q-acc-pct" style="color:var(--cyan)">0%</div>
+          </div>
+        </div>
+      </div>
+      <div class="sess-card">
+        <div class="card-lbl">Mastery Impact</div>
+        <div class="sess-val" style="color:var(--indigo)" id="q-delta">+0%</div>
+      </div>
+      <!-- LLM strategy output -->
+      <div class="card">
+        <div class="card-lbl">Adaptive Agent Strategy</div>
+        <div class="llm-badge" style="margin-top:4px">⚙️ LLM Output</div>
+        <div id="agent-strategy" style="font-size:11px;color:var(--muted2);line-height:1.7;margin-top:4px">
+          Waiting for quiz to load…
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ KNOWLEDGE ══ -->
+<div class="page" id="p-knowledge">
+  <div class="topbar">
+    <div class="page-title"><span>Knowledge</span> Map</div>
+    <div class="chip"><div class="chip-dot" style="background:var(--cyan)"></div>Learner Modeling Agent</div>
+  </div>
+
+  <div class="g21">
+    <div class="card mb">
+      <div class="card-lbl">Concept Mastery Map</div>
+      <div class="concept-grid" id="concept-grid" style="margin-top:12px">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+    <div>
+      <div class="card mb">
+        <div class="card-lbl">Cognitive Profile Radar</div>
+        <div style="display:flex;justify-content:center;padding:8px 0">
+          <svg class="radar" width="185" height="185" viewBox="0 0 200 200">
+            <defs>
+              <linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#22d3ee;stop-opacity:0.25"/>
+                <stop offset="100%" style="stop-color:#818cf8;stop-opacity:0.25"/>
+              </linearGradient>
+            </defs>
+            <polygon points="100,28 152,60 152,115 100,148 48,115 48,60" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="1"/>
+            <polygon points="100,48 136,72 136,105 100,128 64,105 64,72" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="1"/>
+            <polygon points="100,68 120,82 120,97 100,110 80,97 80,82" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="1"/>
+            <line x1="100" y1="100" x2="100" y2="28" stroke="rgba(255,255,255,.07)" stroke-width="1"/>
+            <line x1="100" y1="100" x2="152" y2="60" stroke="rgba(255,255,255,.07)" stroke-width="1"/>
+            <line x1="100" y1="100" x2="152" y2="115" stroke="rgba(255,255,255,.07)" stroke-width="1"/>
+            <line x1="100" y1="100" x2="100" y2="148" stroke="rgba(255,255,255,.07)" stroke-width="1"/>
+            <line x1="100" y1="100" x2="48" y2="115" stroke="rgba(255,255,255,.07)" stroke-width="1"/>
+            <line x1="100" y1="100" x2="48" y2="60" stroke="rgba(255,255,255,.07)" stroke-width="1"/>
+            <polygon points="100,40 142,68 142,108 100,130 64,108 62,68" fill="url(#rg)" stroke="#22d3ee" stroke-width="1.5"/>
+            <text x="100" y="22" text-anchor="middle" fill="#64748b" font-size="8" font-family="JetBrains Mono">Memory</text>
+            <text x="157" y="57" fill="#64748b" font-size="8" font-family="JetBrains Mono">Speed</text>
+            <text x="155" y="123" fill="#64748b" font-size="8" font-family="JetBrains Mono">Pattern</text>
+            <text x="78" y="162" fill="#64748b" font-size="8" font-family="JetBrains Mono">Logic</text>
+            <text x="16" y="123" fill="#64748b" font-size="8" font-family="JetBrains Mono">Focus</text>
+            <text x="12" y="57" fill="#64748b" font-size="8" font-family="JetBrains Mono">Retention</text>
+          </svg>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-lbl">Error Pattern Analysis</div>
+        <div id="error-patterns" style="margin-top:8px">
+          <div class="loading"><div class="spinner"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ AGENTS ══ -->
+<div class="page" id="p-agents">
+  <div class="topbar">
+    <div class="page-title"><span>Agent</span> Monitor</div>
+    <div class="chip"><div class="chip-dot" style="background:var(--emerald)"></div>All Agents Online</div>
+  </div>
+
+  <div class="agent-grid" id="agent-cards">
+    <div class="loading"><div class="spinner"></div></div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
+        <div class="card-lbl" style="margin-bottom:0">Live Agent Log Feed</div>
+        <button class="btn btn-ghost" style="padding:5px 11px;font-size:11px" onclick="loadLogs()">↻ Refresh</button>
+      </div>
+      <div class="log-feed" id="log-feed">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-lbl">Agent Task Queue</div>
+      <div id="task-queue" style="margin-top:8px">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DECISIONS ══ -->
+<div class="page" id="p-decisions">
+  <div class="topbar">
+    <div class="page-title"><span>Explainable AI</span> Decision Logs</div>
+    <div class="chip"><div class="chip-dot" style="background:var(--emerald)"></div>XAI Logging Active</div>
+  </div>
+
+  <div class="g21">
+    <div class="card mb">
+      <div class="card-lbl">Recent Agent Decisions · LLM-Generated Reasoning</div>
+      <div id="decisions-list" style="margin-top:10px">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+    <div>
+      <div class="card mb">
+        <div class="card-lbl">Decision Summary</div>
+        <div id="decision-summary" style="margin-top:8px">
+          <div class="loading"><div class="spinner"></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-lbl">Fairness Metrics</div>
+        <div style="margin-top:8px">
+          <div class="pr"><div class="pr-lbl" style="font-size:11px">Bias Score</div>
+            <div class="pr-track"><div class="pr-fill" style="width:5%;background:var(--emerald)"></div></div>
+            <div class="pr-pct" style="color:var(--emerald);font-size:10px">Low</div></div>
+          <div class="pr"><div class="pr-lbl" style="font-size:11px">Engagement</div>
+            <div class="pr-track"><div class="pr-fill" style="width:72%;background:var(--cyan)"></div></div>
+            <div class="pr-pct" style="color:var(--cyan);font-size:10px">72</div></div>
+          <div class="pr"><div class="pr-lbl" style="font-size:11px">Explainability</div>
+            <div class="pr-track"><div class="pr-fill" style="width:100%;background:var(--emerald)"></div></div>
+            <div class="pr-pct" style="color:var(--emerald);font-size:10px">100%</div></div>
+          <div class="pr"><div class="pr-lbl" style="font-size:11px">LLM Confidence</div>
+            <div class="pr-track"><div class="pr-fill" style="width:92%;background:var(--indigo)"></div></div>
+            <div class="pr-pct" style="color:var(--indigo);font-size:10px">92%</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script>
+/* ══════════════════════════════════
+   CONFIG
+══════════════════════════════════ */
+const API      = 'http://localhost:8000/api';
+const LEARNER  = 'learner_001';
+
+const AGENT_COLOR = {
+  HEAD:'var(--cyan)', LEARNER_MODEL:'var(--indigo)',
+  ADAPTIVE:'var(--emerald)', FAIRNESS:'var(--amber)', CONTENT:'var(--violet)'
+};
+const AGENT_CLS = {
+  HEAD:'la-h', LEARNER_MODEL:'la-l',
+  ADAPTIVE:'la-a', FAIRNESS:'la-f', CONTENT:'la-c'
+};
+
+/* ══════════════════════════════════
+   NAVIGATION
+══════════════════════════════════ */
+function nav(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('p-' + id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') === `nav('${id}')`) n.classList.add('active');
+  });
+  const loaders = {
+    dashboard: loadDashboard,
+    quiz:      loadQuiz,
+    knowledge: loadKnowledge,
+    agents:    () => { loadAgents(); loadLogs(); },
+    decisions: loadDecisions
+  };
+  if (loaders[id]) loaders[id]();
+}
+
+/* ══════════════════════════════════
+   API HELPER
+══════════════════════════════════ */
+async function api(path) {
+  try {
+    const r = await fetch(API + path);
+    if (!r.ok) throw new Error(r.status);
+    return await r.json();
+  } catch (e) {
+    console.warn('API:', path, e.message);
+    return null;
+  }
+}
+async function post(path, body) {
+  try {
+    const r = await fetch(API + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    return await r.json();
+  } catch (e) { return null; }
+}
+
+function err(id, msg) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = `
+    <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px;font-family:var(--mono)">
+      <div style="font-size:22px;margin-bottom:8px">⚠</div>
+      ${msg || 'Backend offline'}<br>
+      <code style="color:var(--cyan);font-size:10px">uvicorn main:app --reload</code>
+    </div>`;
+}
+
+/* ══════════════════════════════════
+   DASHBOARD
+══════════════════════════════════ */
+async function loadDashboard() {
+  const data = await api(`/dashboard/${LEARNER}`);
+  if (!data) { err('mastery-bars'); return; }
+
+  const l = data.learner;
+  const initials = l.name.split(' ').map(w => w[0]).join('');
+  document.getElementById('sid-av').textContent   = initials;
+  document.getElementById('sid-name').textContent = l.name;
+  document.getElementById('sid-lvl').textContent  = `LEVEL ${l.level} · Learner`;
+
+  document.getElementById('s-mastery').textContent  = data.overall_mastery + '%';
+  document.getElementById('s-gaps').textContent     = data.knowledge_gaps;
+  document.getElementById('s-gaps-d').textContent   = `${data.knowledge_gaps} below 50%`;
+  document.getElementById('s-sessions').textContent = l.sessions;
+  document.getElementById('s-streak').textContent   = l.streak;
+  document.getElementById('streak-num').textContent = '🔥 ' + l.streak;
+  document.getElementById('gap-badge').textContent  = data.knowledge_gaps;
+
+  // LLM session brief from Head Agent
+  const rec = data.agent_recommendation;
+  document.getElementById('w-title').textContent = `Welcome back, ${l.name.split(' ')[0]}! 👋`;
+  document.getElementById('w-sub').textContent   = rec.session_message;
+
+  // LLM cognitive analysis from Learner Modeling Agent
+  document.getElementById('llm-analysis').textContent = rec.llm_analysis;
+
+  // Mastery bars
+  document.getElementById('mastery-bars').innerHTML = data.concepts.map(c => {
+    const col = c.mastery >= 70 ? 'var(--emerald)' : c.mastery >= 40 ? 'var(--cyan)' : 'var(--rose)';
+    return `<div class="pr">
+      <div class="pr-lbl">${c.concept}</div>
+      <div class="pr-track"><div class="pr-fill" style="width:${c.mastery}%;background:${col}"></div></div>
+      <div class="pr-pct" style="color:${col}">${c.mastery}%</div>
+    </div>`;
+  }).join('');
+
+  // Retention chart
+  const retVals  = [92, 85, 78, 70, 62, 53, 44];
+  const retCols  = retVals.map(v => v >= 70 ? 'var(--emerald)' : v >= 50 ? 'var(--cyan)' : 'var(--rose)');
+  document.getElementById('ret-chart').innerHTML = retVals.map((v, i) =>
+    `<div class="ret-bar" style="height:${v}%;background:${retCols[i]}" data-v="${v}%"></div>`
+  ).join('');
+
+  const weak = data.concepts.find(c => c.mastery < 50);
+  if (weak) document.getElementById('ret-note').textContent =
+    `⚠ ${weak.concept}: ${weak.retention}% retention — intervention active`;
+
+  // Interventions
+  let intHtml = data.interventions.map(c => `
+    <div class="alert alert-gap">
+      <div class="a-icon">🔴</div>
+      <div><div class="a-title">Gap: ${c.concept}</div>
+      <div class="a-desc">Mastery ${c.mastery}% · Retention ${c.retention}%</div></div>
+    </div>`).join('');
+  intHtml += `<div class="alert alert-warn">
+    <div class="a-icon">⚡</div>
+    <div><div class="a-title">Head Agent Recommendation</div>
+    <div class="a-desc">Focus: ${rec.priority_concept} · ${rec.difficulty} difficulty</div></div>
+  </div>`;
+  document.getElementById('intervention-cards').innerHTML = intHtml;
+}
+
+/* ══════════════════════════════════
+   QUIZ
+══════════════════════════════════ */
+let QS = { questions: [], current: 0, correct: 0, delta: 0, answered: false, sel: -1 };
+
+async function loadQuiz() {
+  const concept = document.getElementById('quiz-concept-sel').value;
+  document.getElementById('quiz-area').innerHTML =
+    `<div class="loading"><div class="spinner"></div><span class="load-txt">Adaptive Agent loading…</span></div>`;
+  const data = await api(`/quiz/${LEARNER}/${encodeURIComponent(concept)}`);
+  if (!data || !data.questions.length) {
+    document.getElementById('quiz-area').innerHTML =
+      `<div class="card"><p style="color:var(--muted);font-size:13px">No questions for this topic.</p></div>`;
+    return;
+  }
+  QS = { questions: data.questions, current: 0, correct: 0, delta: 0, answered: false, sel: -1 };
+
+  // Show LLM strategy (from Adaptive Decision Agent)
+  document.getElementById('agent-strategy').innerHTML =
+    `<strong style="color:var(--amber)">Difficulty: ${data.difficulty}</strong><br>${data.reasoning}`;
+
+  renderQ();
+}
+
+function renderQ() {
+  const qs = QS.questions, i = QS.current;
+  if (i >= qs.length) { showScore(); return; }
+  const q = qs[i];
+  const keys = ['A', 'B', 'C', 'D'];
+  const pct  = ((i + 1) / qs.length * 100).toFixed(0);
+  document.getElementById('quiz-area').innerHTML = `
+    <div class="card">
+      <div class="q-meta">
+        <span class="q-tag qt-t">${document.getElementById('quiz-concept-sel').value}</span>
+        <span class="q-tag qt-d">${q.difficulty}</span>
+        <span class="q-tag qt-n">Q${i+1}/${qs.length}</span>
+      </div>
+      <div class="q-prog-wrap"><div class="q-prog-fill" style="width:${pct}%"></div></div>
+      <div class="q-num">QUESTION ${i+1} OF ${qs.length}</div>
+      <div class="q-text">${q.text}</div>
+      <div class="opts" id="opts">
+        ${q.options.map((o, idx) => `
+          <div class="opt" id="opt-${idx}" onclick="selOpt(${idx})">
+            <div class="opt-key">${keys[idx]}</div>${o}
+          </div>`).join('')}
+      </div>
+      <div class="q-fb" id="q-fb"></div>
+      <div class="think" id="think">
+        <span>🧠 Agents processing</span>
+        <span class="dots"><span>.</span><span>.</span><span>.</span></span>
+      </div>
+      <button class="btn btn-primary" id="sub-btn" onclick="submitQ(${q.id})" disabled>Submit Answer</button>
+    </div>`;
+  QS.answered = false; QS.sel = -1;
+}
+
+function selOpt(idx) {
+  if (QS.answered) return;
+  document.querySelectorAll('.opt').forEach(o => o.classList.remove('sel'));
+  document.getElementById('opt-' + idx).classList.add('sel');
+  QS.sel = idx;
+  document.getElementById('sub-btn').disabled = false;
+}
+
+async function submitQ(qId) {
+  if (QS.answered || QS.sel < 0) return;
+  QS.answered = true;
+  const concept = document.getElementById('quiz-concept-sel').value;
+  document.querySelectorAll('.opt').forEach(o => o.classList.add('locked'));
+  document.getElementById('sub-btn').disabled = true;
+  document.getElementById('think').classList.add('show');
+
+  const res = await post('/quiz/answer', {
+    learner_id: LEARNER, concept, question_id: qId,
+    selected: QS.sel, time_taken: 8.5
+  });
+  document.getElementById('think').classList.remove('show');
+
+  const isOk    = res ? res.is_correct : false;
+  const corrIdx = res ? res.correct_index : 0;
+  const expl    = res ? res.explanation : '';
+  const delta   = res ? res.mastery_delta : (isOk ? 5 : -3);
+
+  if (isOk) QS.correct++;
+  QS.delta += delta;
+
+  document.querySelectorAll('.opt').forEach((o, i) => {
+    if (i === QS.sel)  o.classList.add(isOk ? 'ok' : 'bad');
+    if (i === corrIdx) o.classList.add('ok');
+  });
+
+  const fb = document.getElementById('q-fb');
+  fb.className = 'q-fb show ' + (isOk ? 'fb-ok' : 'fb-bad');
+  fb.innerHTML = `<strong style="color:${isOk ? 'var(--emerald)' : 'var(--rose)'}">${isOk ? '✓ Correct!' : '✗ Incorrect'}</strong> ${expl}`;
+
+  // Motivation message from Fairness Agent (LLM) shown if struggling
+  if (res?.fairness?.motivate && res.fairness.message) {
+    fb.innerHTML += `<div style="margin-top:8px;padding:7px 10px;background:rgba(251,191,36,.08);border-radius:6px;color:var(--amber);font-size:11px">
+      ⚖️ <strong>Fairness Agent:</strong> ${res.fairness.message}
+    </div>`;
+  }
+
+  const total = QS.current + 1;
+  const acc   = Math.round(QS.correct / total * 100);
+  document.getElementById('q-correct').textContent = `${QS.correct} / ${total}`;
+  document.getElementById('q-acc-bar').style.width = acc + '%';
+  document.getElementById('q-acc-pct').textContent = acc + '%';
+  document.getElementById('q-delta').textContent   = (QS.delta >= 0 ? '+' : '') + QS.delta + '%';
+
+  const btn = document.getElementById('sub-btn');
+  if (QS.current < QS.questions.length - 1) {
+    btn.textContent = 'Next Question →'; btn.disabled = false;
+    btn.onclick = () => { QS.current++; renderQ(); };
+  } else {
+    btn.textContent = 'View Results'; btn.disabled = false;
+    btn.onclick = showScore;
+  }
+}
+
+function showScore() {
+  const total = QS.questions.length;
+  const pct   = Math.round(QS.correct / total * 100);
+  const emoji = pct >= 80 ? '🏆' : pct >= 60 ? '👍' : '💪';
+  document.getElementById('quiz-area').innerHTML = `
+    <div class="card score-screen">
+      <div class="score-big">${pct}%</div>
+      <div style="font-size:14px;color:var(--muted2);margin-bottom:6px">${QS.correct} of ${total} correct ${emoji}</div>
+      <div style="font-size:12px;color:var(--muted2);margin-bottom:22px">
+        Mastery impact: <strong style="color:var(--indigo)">${QS.delta > 0 ? '+' : ''}${QS.delta}%</strong>
+        · Learner profile updated by AI agents.
+      </div>
+      <button class="btn btn-primary" onclick="loadQuiz()">Try Again</button>
+    </div>`;
+}
+
+/* ══════════════════════════════════
+   KNOWLEDGE MAP
+══════════════════════════════════ */
+async function loadKnowledge() {
+  const data = await api(`/knowledge/${LEARNER}`);
+  if (!data) { err('concept-grid'); return; }
+
+  document.getElementById('concept-grid').innerHTML = data.concepts.map(c => {
+    const cls  = c.status === 'mastered' ? 'mastered' : c.status === 'learning' ? 'learning' : 'gap';
+    const fCls = cls === 'mastered' ? 'fm' : cls === 'learning' ? 'fl' : 'fg';
+    const fTxt = cls === 'mastered' ? 'Mastered' : cls === 'learning' ? 'Learning' : 'Gap';
+    const col  = cls === 'mastered' ? 'var(--emerald)' : cls === 'learning' ? 'var(--amber)' : 'var(--rose)';
+    return `<div class="cn ${cls}" onclick="startQuizOn('${c.concept}')">
+      <span class="cn-flag ${fCls}">${fTxt}</span>
+      <div class="cn-name">${c.concept}</div>
+      <div class="cn-val" style="color:${col}">${c.mastery}% mastery</div>
+      <div class="cn-val" style="color:var(--muted);font-size:9px">${c.retention}% retention</div>
+      <div class="cn-bar" style="width:${c.mastery}%;background:${col}"></div>
+    </div>`;
+  }).join('');
+
+  const gaps = data.concepts.filter(c => c.status !== 'mastered');
+  const errHtml = gaps.slice(0, 3).flatMap(c => c.error_types.map(e =>
+    `<div class="pr">
+      <div class="pr-lbl" style="font-size:10px">${c.concept} — ${e}</div>
+      <div class="pr-track"><div class="pr-fill" style="width:${30 + Math.round(Math.random() * 50)}%;background:var(--rose)"></div></div>
+    </div>`
+  )).slice(0, 5).join('');
+  document.getElementById('error-patterns').innerHTML = errHtml ||
+    '<span style="font-size:11px;color:var(--muted)">No errors detected.</span>';
+}
+
+function startQuizOn(concept) {
+  document.getElementById('quiz-concept-sel').value = concept;
+  nav('quiz');
+}
+
+/* ══════════════════════════════════
+   AGENTS
+══════════════════════════════════ */
+async function loadAgents() {
+  const data = await api('/agents/status');
+  if (!data) { err('agent-cards'); return; }
+
+  const stMap = { ACTIVE:'st-a', ANALYZING:'st-n', SCALING:'st-s', MONITORING:'st-m', READY:'st-r' };
+  const acMap = { HEAD:'ac-head', LEARNER_MODEL:'ac-lm', ADAPTIVE:'ac-adapt', FAIRNESS:'ac-fair', CONTENT:'ac-cont' };
+
+  document.getElementById('agent-cards').innerHTML = data.agents.map(a => `
+    <div class="ac ${acMap[a.id] || ''}">
+      <div class="ac-pulse"></div>
+      <div class="ac-icon">${a.icon}</div>
+      <div class="ac-name">${a.name}</div>
+      <div class="ac-role">${a.role}</div>
+      <span class="ac-state ${stMap[a.status] || 'st-a'}">${a.status}</span>
+    </div>`).join('');
+
+  document.getElementById('task-queue').innerHTML =
+    tq('Re-sequence Concept Path',    'HEAD → ADAPTIVE', 'HIGH',   'RUNNING', 'var(--cyan)') +
+    tq('Update Mastery Estimate',      'LEARNER_MODEL',   'MED',    'QUEUED',  'var(--indigo)') +
+    tq('LLM Cognitive Analysis',       'LEARNER_MODEL',   'HIGH',   'DONE',    'var(--emerald)') +
+    tq('LLM Session Brief',            'HEAD',            'HIGH',   'DONE',    'var(--cyan)') +
+    tq('Bias Audit Report',            'FAIRNESS',        'LOW',    'QUEUED',  'var(--amber)');
+}
+
+function tq(title, agent, prio, status, color) {
+  const sc = status === 'DONE' ? 'dg' : status === 'RUNNING' ? 'dg' : 'dy';
+  return `<div class="tq" style="border-color:${color}">
+    <div class="tq-hd">
+      <strong style="font-size:12px">${title}</strong>
+      <span class="delta ${sc}" style="margin-top:0">${status}</span>
+    </div>
+    <div class="tq-sub">Agent: ${agent} · Priority: ${prio}</div>
+  </div>`;
+}
+
+async function loadLogs() {
+  const data = await api(`/agents/logs/${LEARNER}?limit=30`);
+  if (!data || !data.length) {
+    document.getElementById('log-feed').innerHTML =
+      '<span style="font-size:11px;color:var(--muted);padding:10px">No logs yet — load the dashboard to generate agent events.</span>';
+    return;
+  }
+  document.getElementById('log-feed').innerHTML = data.map(l => {
+    const aCls  = AGENT_CLS[l.agent] || 'la-h';
+    const label = `[${l.agent.slice(0, 4)}]`;
+    const time  = new Date(l.timestamp).toTimeString().slice(0, 8);
+    return `<div class="log-row">
+      <span class="lt">${time}</span>
+      <span class="la ${aCls}">${label}</span>
+      <span class="lm-txt">${l.action}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('log-feed').scrollTop = 9999;
+}
+
+/* ══════════════════════════════════
+   DECISIONS
+══════════════════════════════════ */
+async function loadDecisions() {
+  const data = await api(`/agents/decisions/${LEARNER}?limit=8`);
+  if (!data) { err('decisions-list'); return; }
+
+  document.getElementById('decisions-list').innerHTML = data.map(d => {
+    const color = AGENT_COLOR[d.agent] || 'var(--cyan)';
+    const conf  = Math.round(d.confidence * 100);
+    const time  = new Date(d.timestamp).toTimeString().slice(0, 8);
+    return `<div class="de" style="border-color:${color}">
+      <div class="de-hd">
+        <span class="de-ag" style="color:${color}">[${d.agent}]</span>
+        <span class="de-tm">${time}</span>
+      </div>
+      <div class="de-dec">${d.decision}</div>
+      <div class="de-rea">${d.reasoning}</div>
+      <div class="de-cf">
+        <span class="de-cfl">Confidence</span>
+        <div class="de-cfb" style="width:${conf}px;background:${color}"></div>
+        <span style="font-size:10px;font-family:var(--mono);color:${color}">${conf}%</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Summary
+  const counts  = {};
+  data.forEach(d => counts[d.agent] = (counts[d.agent] || 0) + 1);
+  const avgConf = data.length ? Math.round(data.reduce((a, d) => a + d.confidence, 0) / data.length * 100) : 0;
+  document.getElementById('decision-summary').innerHTML = `
+    <div style="margin-bottom:10px">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:3px">Total Decisions</div>
+      <div style="font-size:26px;font-weight:800;color:var(--cyan)">${data.length}</div>
+    </div>
+    ${Object.entries(counts).map(([a, n]) => `
+      <div class="pr">
+        <div class="pr-lbl" style="font-size:10px">${a}</div>
+        <div class="pr-track"><div class="pr-fill" style="width:${n * 20}%;background:${AGENT_COLOR[a] || 'var(--cyan)'}"></div></div>
+        <div class="pr-pct" style="font-size:10px">${n}</div>
+      </div>`).join('')}
+    <div style="margin-top:10px">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Avg Confidence</div>
+      <div style="font-size:20px;font-weight:800;color:var(--emerald)">${avgConf}%</div>
+    </div>`;
+}
+
+/* ══════════════════════════════════
+   INIT
+══════════════════════════════════ */
+loadDashboard();
+</script>
+</body>
+</html>
